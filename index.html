@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AquaAlert AI – Urban Flood & Water Scarcity Predictor</title>
+  <meta name="description" content="AI-powered urban flood and water scarcity predictor aligned with UN SDGs 6, 11, and 13." />
+  <link rel="stylesheet" href="styles/main.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+<!-- ══ NAVBAR ══════════════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <a class="nav-logo" href="#" onclick="scrollToHero(event)">
+    <div class="nav-logo-icon">💧</div>
+    AquaAlert AI
+  </a>
+  <div class="nav-right">
+    <div class="nav-sdg-pills">
+      <span class="nav-sdg-pill">SDG 6</span>
+      <span class="nav-sdg-pill">SDG 11</span>
+      <span class="nav-sdg-pill">SDG 13</span>
+    </div>
+    <button class="nav-cta-btn" id="open-config">⚙ Configure API</button>
+  </div>
+</nav>
+
+<!-- ══ CONFIG MODAL ════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">🔑 API Configuration</div>
+    <div class="modal-sub">
+      Enter your API keys to enable live weather data. Keys are stored locally in your browser and never sent to any external server.
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label" for="modal-ow-key">OpenWeather API Key</label>
+      <input class="modal-input" id="modal-ow-key" type="password" placeholder="e.g. a1b2c3d4e5f6..." autocomplete="off" />
+      <div class="api-hint">
+        Free key at <strong>openweathermap.org/api</strong> → Current Weather Data plan.
+      </div>
+    </div>
+
+    <div class="modal-field" style="margin-top:1rem">
+      <div style="padding:0.75rem;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem">🤖 AI Recommendations</div>
+        <div class="api-hint">
+          AI sustainability recommendations are powered automatically via the Claude API embedded in this app — no additional key needed.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-primary" id="modal-save">Save & Continue</button>
+      <button class="btn-ghost" id="modal-close">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: HOME ═══════════════════════════════════════════ -->
+<div class="page-section active" id="section-home">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-dot"></span>
+      AI · Sustainability · SDG 6 · 11 · 13
+    </div>
+
+    <h1 class="hero-title">
+      <span class="gradient-water">AquaAlert AI</span><br />
+      Urban Flood &amp; <span class="gradient-heat">Water Scarcity</span><br />
+      Predictor
+    </h1>
+
+    <p class="hero-subtitle">
+      Predict environmental risks in real time using live weather data and
+      AI-powered sustainability insights.
+    </p>
+
+    <!-- API notice -->
+    <div id="api-notice" class="hidden" style="margin-bottom:1.25rem">
+      <span class="demo-notice">
+        ⚡ Configure your OpenWeather API key to enable live analysis
+        &nbsp;–&nbsp;
+        <span style="cursor:pointer;text-decoration:underline" id="open-config-inline">Set up now</span>
+      </span>
+    </div>
+
+    <!-- Search -->
+    <div class="hero-search" role="search">
+      <span class="hero-search-icon">🔍</span>
+      <input
+        id="city-input"
+        type="text"
+        placeholder="Enter city name — e.g. Mumbai, Lagos, Miami…"
+        aria-label="Enter city name"
+        autocomplete="off"
+      />
+      <button class="hero-search-btn" id="analyze-btn">Analyze Risk</button>
+    </div>
+
+    <!-- Quick tags -->
+    <div class="hero-tags" aria-label="Quick city suggestions">
+      <span class="hero-tag">Mumbai</span>
+      <span class="hero-tag">Jakarta</span>
+      <span class="hero-tag">Lagos</span>
+      <span class="hero-tag">Miami</span>
+      <span class="hero-tag">Chennai</span>
+      <span class="hero-tag">Dhaka</span>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">6+</div>
+        <div class="hero-stat-label">Weather Parameters</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">3</div>
+        <div class="hero-stat-label">UN SDGs Addressed</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">AI</div>
+        <div class="hero-stat-label">Powered Insights</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">Real‑time</div>
+        <div class="hero-stat-label">Weather Data</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RESULTS (shown after analysis) ── -->
+  <div class="results-container" id="results-container">
+
+    <!-- WEATHER SECTION -->
+    <section id="weather-section">
+      <div class="section-inner">
+        <div class="section-divider" style="margin-bottom:3rem"></div>
+
+        <div id="weather-city-header" class="weather-city-header">
+          <span class="weather-city-name" style="opacity:0.3">–</span>
+        </div>
+
+        <div class="weather-grid" id="weather-cards-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── RISK CARDS ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Risk Assessment</span>
+        <h2 class="section-title">Environmental Risk Analysis</h2>
+        <p class="section-sub">Real-time flood and water scarcity risk computed from live meteorological data.</p>
+        <div class="risk-section-grid">
+          <div class="glass-card risk-card" id="flood-risk-card">
+            <div class="risk-card-title">🌊 Flood Risk Assessment</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;padding:1rem 0">Run an analysis to see flood risk.</div>
+          </div>
+          <div class="glass-card risk-card" id="water-risk-card">
+            <div class="risk-card-title">🏜️ Water Scarcity Assessment</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;padding:1rem 0">Run an analysis to see water scarcity risk.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── WHY THIS PREDICTION? ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Explainable AI</span>
+        <h2 class="section-title">Why This Prediction?</h2>
+        <p class="section-sub">Every risk score is derived from real meteorological factors — full transparency into our decision logic.</p>
+        <div id="risk-explanations" style="margin-top:2rem">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PREDICTION CONFIDENCE ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Model Confidence</span>
+        <h2 class="section-title">Prediction Confidence Scores</h2>
+        <p class="section-sub">Confidence is calculated from the number of aligned risk indicators detected in current weather data.</p>
+        <div class="glass-card" style="padding:2rem;margin-top:2rem">
+          <div id="confidence-section">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── EMERGENCY SEVERITY ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Emergency Preparedness Status</span>
+        <h2 class="section-title">Current Alert Level</h2>
+        <p class="section-sub">Composite severity level based on combined flood and water scarcity risk assessments.</p>
+        <div id="emergency-severity" style="margin-top:2rem">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FUTURE RISK FORECAST ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">5-Day Outlook</span>
+        <h2 class="section-title">Future Risk Forecast</h2>
+        <p class="section-sub">Forward-looking risk estimates derived from OpenWeather 5-day / 3-hour forecast data.</p>
+        <div class="glass-card" style="padding:2rem;margin-top:2rem">
+          <div id="future-forecast">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── COMMUNITY IMPACT ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Community Impact Analysis</span>
+        <h2 class="section-title">Potential Community Impact</h2>
+        <p class="section-sub">Contextual predictions of how current risk levels may affect urban communities and infrastructure.</p>
+        <div id="community-impact" style="margin-top:2rem">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ── RISK SUMMARY CARD ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Executive Summary</span>
+        <h2 class="section-title">Environmental Risk Summary</h2>
+        <p class="section-sub">A concise overview of current environmental status — suitable for briefings and presentations.</p>
+        <div id="risk-summary" style="margin-top:2rem"><!-- Populated by JS --></div>
+      </div>
+    </section>
+
+    <!-- ── WHY THIS MATTERS FOR YOUR CITY ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">City Intelligence</span>
+        <h2 class="section-title" id="city-matters-title">Why This Matters</h2>
+        <p class="section-sub">Contextual environmental intelligence specific to your city's geography, climate profile, and urban vulnerability.</p>
+        <div id="city-matters" style="margin-top:2rem"><!-- Populated by JS --></div>
+      </div>
+    </section>
+
+    <!-- ── RISK COMPARISON TIMELINE ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Risk Intelligence</span>
+        <h2 class="section-title">Risk Comparison Timeline</h2>
+        <p class="section-sub">Yesterday · Today · Tomorrow — understand whether risk is rising, stable, or declining.</p>
+        <div id="risk-timeline" style="margin-top:2rem"><!-- Populated by JS --></div>
+      </div>
+    </section>
+
+    <!-- ── SUSTAINABILITY METRICS ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">Environmental Impact Insights</span>
+        <h2 class="section-title">Real Sustainability Metrics</h2>
+        <p class="section-sub">Composite climate intelligence indicators derived from live meteorological conditions.</p>
+        <div id="sustainability-metrics" style="margin-top:2rem">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── AI RECOMMENDATIONS ── -->
+    <section>
+      <div class="section-inner">
+        <span class="section-label">AI-Powered Insights</span>
+        <h2 class="section-title">Sustainability Recommendations</h2>
+        <p class="section-sub">Intelligent, location-aware guidance generated by Claude AI — or AquaAlert's built-in sustainability engine.</p>
+        <div class="glass-card ai-card" style="margin-top:2rem">
+          <div class="ai-card-header">
+            <div class="ai-badge"><span class="ai-badge-dot"></span>Claude AI · AquaAlert Engine</div>
+            <div class="ai-card-title">Environmental Sustainability Analysis</div>
+          </div>
+          <div class="ai-content" id="ai-content">
+            <div style="color:var(--text-muted);font-size:0.875rem">Analyze a city to receive AI-powered sustainability recommendations.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /results-container -->
+
+  <!-- SDG SECTION (always visible) -->
+  <section style="padding-top:2rem">
+    <div class="section-inner">
+      <div class="section-divider" style="margin-bottom:3rem"></div>
+      <span class="section-label">UN Sustainable Development Goals</span>
+      <h2 class="section-title">SDG Alignment</h2>
+      <p class="section-sub">AquaAlert AI directly supports three critical global sustainability goals.</p>
+
+      <div class="sdg-grid">
+        <div class="glass-card sdg-card">
+          <div class="sdg-number" style="color:var(--cyan)">SDG 6</div>
+          <div class="sdg-title">Clean Water &amp; Sanitation</div>
+          <div class="sdg-desc">
+            By predicting water scarcity conditions, AquaAlert enables communities and
+            policymakers to act before crisis points are reached — protecting access
+            to safe drinking water for all.
+          </div>
+        </div>
+        <div class="glass-card sdg-card">
+          <div class="sdg-number" style="color:var(--amber)">SDG 11</div>
+          <div class="sdg-title">Sustainable Cities &amp; Communities</div>
+          <div class="sdg-desc">
+            Urban flood prediction helps cities build resilience infrastructure.
+            Early warning supports sustainable urban planning, reducing disaster-related
+            displacement and economic damage.
+          </div>
+        </div>
+        <div class="glass-card sdg-card">
+          <div class="sdg-number" style="color:var(--green)">SDG 13</div>
+          <div class="sdg-title">Climate Action</div>
+          <div class="sdg-desc">
+            AI-generated sustainability recommendations guide individuals and
+            communities toward climate-smart behaviours and emergency preparedness
+            in a rapidly changing climate.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESPONSIBLE AI SECTION -->
+  <section>
+    <div class="section-inner">
+      <span class="section-label">Responsible AI</span>
+      <h2 class="section-title">Built with AI Ethics in Mind</h2>
+      <p class="section-sub">AquaAlert AI is designed to be transparent, fair, and trustworthy.</p>
+
+      <div class="rai-grid">
+        <div class="glass-card rai-card">
+          <span class="rai-icon">⚖️</span>
+          <div class="rai-title">Fairness</div>
+          <div class="rai-desc">Risk predictions are based purely on meteorological data — no demographic or socio-economic bias in the model.</div>
+        </div>
+        <div class="glass-card rai-card">
+          <span class="rai-icon">🔍</span>
+          <div class="rai-title">Transparency</div>
+          <div class="rai-desc">Every risk score is computed from clearly documented thresholds. You can see exactly which factors drove the assessment.</div>
+        </div>
+        <div class="glass-card rai-card">
+          <span class="rai-icon">🛡️</span>
+          <div class="rai-title">Privacy</div>
+          <div class="rai-desc">No personal data is stored or transmitted. API keys remain in your browser's local storage only.</div>
+        </div>
+        <div class="glass-card rai-card">
+          <span class="rai-icon">🌐</span>
+          <div class="rai-title">Ethics</div>
+          <div class="rai-desc">AI recommendations are advisory only — always follow official emergency services guidance during real crises.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FEATURES (continues on same page) ═══ -->
+  <section>
+    <div class="section-inner">
+      <span class="section-label">Platform Capabilities</span>
+      <h2 class="section-title">Everything You Need to Predict &amp; Prepare</h2>
+      <p class="section-sub">Six integrated modules — from live data ingestion to AI-driven actionable guidance.</p>
+
+      <div class="features-grid">
+
+        <div class="glass-card feature-card">
+          <div class="feature-icon" style="background:var(--cyan-dim);border:1px solid var(--border-accent)">🌐</div>
+          <div class="feature-title">Live Weather Integration</div>
+          <div class="feature-desc">
+            Pulls real-time data from OpenWeather API — temperature, humidity, wind speed, atmospheric pressure, cloud cover, and visibility — the moment you search a city.
+          </div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-icon" style="background:rgba(0,100,255,0.15);border:1px solid rgba(0,100,255,0.2)">🌊</div>
+          <div class="feature-title">Flood Risk Engine</div>
+          <div class="feature-desc">
+            A multi-factor prediction model evaluating humidity, precipitation type, and wind speed to classify flood risk as Low, Medium, or High — with animated visual gauges.
+          </div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-icon" style="background:var(--amber-dim);border:1px solid rgba(255,107,53,0.2)">🏜️</div>
+          <div class="feature-title">Water Scarcity Detector</div>
+          <div class="feature-desc">
+            Combines temperature and humidity thresholds to assess water availability risk — outputting Safe, Moderate, or Critical status with context-specific risk scores.
+          </div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-icon" style="background:rgba(123,47,255,0.15);border:1px solid rgba(123,47,255,0.2)">🤖</div>
+          <div class="feature-title">AI Sustainability Advisor</div>
+          <div class="feature-desc">
+            Claude AI synthesises live weather conditions and risk assessments into personalised flood safety, water conservation, and emergency preparedness recommendations.
+          </div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-icon" style="background:var(--green-dim);border:1px solid rgba(0,232,154,0.2)">📊</div>
+          <div class="feature-title">Interactive Dashboard</div>
+          <div class="feature-desc">
+            Chart.js-powered live charts track temperature and humidity trends across multiple queries. Risk doughnut charts give an at-a-glance overview of current exposure.
+          </div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-icon" style="background:rgba(255,193,7,0.12);border:1px solid rgba(255,193,7,0.2)">🌍</div>
+          <div class="feature-title">UN SDG Alignment</div>
+          <div class="feature-desc">
+            Every feature is designed around SDG 6 (Clean Water), SDG 11 (Sustainable Cities), and SDG 13 (Climate Action) — making AquaAlert a demonstration-ready sustainability platform.
+          </div>
+        </div>
+
+      </div><!-- /features-grid -->
+
+      <!-- Feature detail callout -->
+      <div class="glass-card" style="margin-top:3rem;padding:2rem;display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div class="section-label" style="margin-bottom:0.5rem">How It Works</div>
+          <h3 style="font-family:var(--font-display);font-size:1.25rem;font-weight:700;margin-bottom:0.75rem">From Search to Insight in Seconds</h3>
+          <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.75">
+            Enter any city → live weather is fetched → risk engines evaluate the conditions →
+            Claude AI generates tailored recommendations → results populate in real time.
+            No server required. Everything runs in your browser.
+          </p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;flex:1;min-width:220px">
+          <div style="display:flex;gap:0.75rem;align-items:center;font-size:0.85rem">
+            <span style="width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan);flex-shrink:0">1</span>
+            <span style="color:var(--text-secondary)">Enter a city and press <strong style="color:var(--text-primary)">Analyze Risk</strong></span>
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center;font-size:0.85rem">
+            <span style="width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan);flex-shrink:0">2</span>
+            <span style="color:var(--text-secondary)">Live weather fetched from <strong style="color:var(--text-primary)">OpenWeather API</strong></span>
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center;font-size:0.85rem">
+            <span style="width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan);flex-shrink:0">3</span>
+            <span style="color:var(--text-secondary)">Flood &amp; water risk computed by <strong style="color:var(--text-primary)">risk engines</strong></span>
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center;font-size:0.85rem">
+            <span style="width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan);flex-shrink:0">4</span>
+            <span style="color:var(--text-secondary)">AI advisor generates <strong style="color:var(--text-primary)">personalised guidance</strong></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ DASHBOARD (continues on same page) ═══ -->
+  <section>
+    <div class="section-inner">
+
+      <div class="dashboard-header">
+        <div>
+          <span class="section-label">Live Monitoring</span>
+          <h2 class="section-title" style="margin-bottom:0.25rem">Risk Dashboard</h2>
+          <p style="font-size:0.85rem;color:var(--text-muted)" id="dash-city-label">Search a city on the home page to populate dashboard data.</p>
+        </div>
+        <button class="btn-ghost" onclick="scrollToHero(event)" style="white-space:nowrap">+ Analyze New City</button>
+      </div>
+
+      <!-- Metric cards -->
+      <div class="dashboard-metrics">
+        <div class="glass-card metric-card" style="--accent-bar:var(--amber)">
+          <span class="metric-icon">🌡️</span>
+          <div class="metric-value text-amber" id="dash-temp">–</div>
+          <div class="metric-label">Temperature</div>
+          <div class="metric-change" style="color:var(--text-muted)">Celsius</div>
+        </div>
+        <div class="glass-card metric-card" style="--accent-bar:var(--cyan)">
+          <span class="metric-icon">💧</span>
+          <div class="metric-value text-cyan" id="dash-humidity">–</div>
+          <div class="metric-label">Humidity</div>
+          <div class="metric-change" style="color:var(--text-muted)">Relative</div>
+        </div>
+        <div class="glass-card metric-card" style="--accent-bar:#b78fff">
+          <span class="metric-icon">💨</span>
+          <div class="metric-value" style="color:#b78fff" id="dash-wind">–</div>
+          <div class="metric-label">Wind Speed</div>
+          <div class="metric-change" style="color:var(--text-muted)">km/h</div>
+        </div>
+        <div class="glass-card metric-card" style="--accent-bar:var(--green)">
+          <span class="metric-icon">🌤️</span>
+          <div class="metric-value text-green" style="font-size:1.2rem;padding-top:0.4rem" id="dash-weather">–</div>
+          <div class="metric-label">Condition</div>
+          <div class="metric-change" style="color:var(--text-muted)">Current</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="glass-card chart-card">
+          <div class="chart-title">📈 Temperature &amp; Humidity Trend</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="trend-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="chart-title">🎯 Risk Breakdown</div>
+          <div class="chart-canvas-wrap" style="height:180px">
+            <canvas id="risk-chart"></canvas>
+          </div>
+          <div class="risk-badges" style="margin-top:1rem">
+            <div class="risk-badge-item">
+              <span class="risk-badge-name">🌊 Flood Risk</span>
+              <span class="risk-badge-val badge-low" id="dash-flood-badge">–</span>
+            </div>
+            <div class="risk-badge-item">
+              <span class="risk-badge-name">🏜️ Water Scarcity</span>
+              <span class="risk-badge-val badge-safe" id="dash-water-badge">–</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Forecast chart -->
+      <div class="glass-card chart-card" style="margin-bottom:2rem">
+        <div class="chart-title">🌡️ 24-Hour Temperature Forecast</div>
+        <div class="chart-canvas-wrap" style="height:200px">
+          <canvas id="forecast-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Risk level guide -->
+      <div class="glass-card" style="padding:1.75rem;margin-top:0">
+        <div class="chart-title" style="margin-bottom:1.25rem">📋 Risk Level Reference Guide</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem">Flood Risk Thresholds</div>
+            <div class="risk-badge-item" style="margin-bottom:0.5rem">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">Humidity &gt;80% + Rain + Wind &gt;10 m/s</span>
+              <span class="risk-badge-val badge-high">HIGH</span>
+            </div>
+            <div class="risk-badge-item" style="margin-bottom:0.5rem">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">Humidity &gt;60% or Rain present</span>
+              <span class="risk-badge-val badge-medium">MEDIUM</span>
+            </div>
+            <div class="risk-badge-item">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">All other conditions</span>
+              <span class="risk-badge-val badge-low">LOW</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem">Water Scarcity Thresholds</div>
+            <div class="risk-badge-item" style="margin-bottom:0.5rem">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">Temp &gt;35°C + Humidity &lt;35%</span>
+              <span class="risk-badge-val badge-critical">CRITICAL</span>
+            </div>
+            <div class="risk-badge-item" style="margin-bottom:0.5rem">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">Temperature &gt;28°C</span>
+              <span class="risk-badge-val badge-moderate">MODERATE</span>
+            </div>
+            <div class="risk-badge-item">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">All other conditions</span>
+              <span class="risk-badge-val badge-safe">SAFE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ ABOUT (continues on same page) ═══ -->
+  <section>
+    <div class="section-inner">
+
+      <span class="section-label">About the Project</span>
+      <h2 class="section-title">Why Flood Prediction &amp; Water Sustainability Matter</h2>
+
+      <div class="about-grid">
+        <div class="about-text">
+          <p>
+            Urban flooding is among the most destructive natural hazards of our era. As climate change intensifies
+            rainfall events and cities expand onto flood-prone land, the gap between risk and preparedness grows
+            wider every year. Globally, floods displace tens of millions of people annually and cost trillions in
+            economic damage.
+          </p>
+          <p>
+            At the same time, water scarcity threatens over 2 billion people — a number set to rise sharply under
+            continued warming. The paradox of simultaneous flood and drought risk, sometimes in the same city across
+            different seasons, demands intelligent, data-driven tools accessible to everyone.
+          </p>
+          <p>
+            AquaAlert AI was built to bridge that gap. By combining live meteorological data with transparent
+            risk logic and AI-generated sustainability guidance, it empowers communities, students, urban planners,
+            and policymakers to understand and respond to environmental risks in real time — no specialised training
+            required.
+          </p>
+        </div>
+
+        <div class="about-highlights">
+          <div class="about-highlight">
+            <div class="about-highlight-icon">🌊</div>
+            <div class="about-highlight-text">
+              <h4>Flood Displacement</h4>
+              <p>Over 20 million people are displaced by floods globally each year — more than any other natural hazard.</p>
+            </div>
+          </div>
+          <div class="about-highlight">
+            <div class="about-highlight-icon">💧</div>
+            <div class="about-highlight-text">
+              <h4>Water Access Crisis</h4>
+              <p>2.2 billion people lack safely managed drinking water services. Climate change is accelerating shortfalls.</p>
+            </div>
+          </div>
+          <div class="about-highlight">
+            <div class="about-highlight-icon">🤖</div>
+            <div class="about-highlight-text">
+              <h4>AI for Good</h4>
+              <p>AI-powered early warning systems can reduce disaster-related deaths and losses by up to 30%, per UN data.</p>
+            </div>
+          </div>
+          <div class="about-highlight">
+            <div class="about-highlight-icon">🏙️</div>
+            <div class="about-highlight-text">
+              <h4>Urban Vulnerability</h4>
+              <p>By 2050, 68% of the world's population will live in cities — making urban resilience a defining challenge.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tech stack -->
+      <div class="glass-card" style="margin-top:3rem;padding:2rem">
+        <div class="chart-title" style="margin-bottom:1.5rem">🛠️ Technology Stack</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.6rem">
+          <span style="padding:0.35rem 0.85rem;background:var(--cyan-dim);border:1px solid var(--border-accent);border-radius:100px;font-size:0.8rem;color:var(--cyan)">HTML5</span>
+          <span style="padding:0.35rem 0.85rem;background:var(--cyan-dim);border:1px solid var(--border-accent);border-radius:100px;font-size:0.8rem;color:var(--cyan)">CSS3 / Glassmorphism</span>
+          <span style="padding:0.35rem 0.85rem;background:var(--cyan-dim);border:1px solid var(--border-accent);border-radius:100px;font-size:0.8rem;color:var(--cyan)">Vanilla JavaScript</span>
+          <span style="padding:0.35rem 0.85rem;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.2);border-radius:100px;font-size:0.8rem;color:var(--amber)">OpenWeather API</span>
+          <span style="padding:0.35rem 0.85rem;background:rgba(123,47,255,0.15);border:1px solid rgba(123,47,255,0.25);border-radius:100px;font-size:0.8rem;color:#b78fff">Claude AI (Anthropic)</span>
+          <span style="padding:0.35rem 0.85rem;background:var(--green-dim);border:1px solid rgba(0,232,154,0.2);border-radius:100px;font-size:0.8rem;color:var(--green)">Chart.js</span>
+          <span style="padding:0.35rem 0.85rem;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.2);border-radius:100px;font-size:0.8rem;color:var(--yellow)">Netlify / Vercel Deploy</span>
+        </div>
+      </div>
+
+      <!-- Setup guide -->
+      <div class="glass-card" style="margin-top:1.5rem;padding:2rem">
+        <div class="chart-title" style="margin-bottom:1.25rem">🚀 Quick Setup Guide</div>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <span style="min-width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan)">1</span>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.2rem">Get OpenWeather API Key</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">Sign up free at <strong>openweathermap.org</strong> → API Keys → Copy your key.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <span style="min-width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan)">2</span>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.2rem">Configure the App</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">Click <strong>⚙ Configure API</strong> in the navbar → paste your key → Save.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <span style="min-width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan)">3</span>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.2rem">Search Any City</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">Type a city name on the home page and press <strong>Analyze Risk</strong>.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <span style="min-width:28px;height:28px;background:var(--cyan-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan)">4</span>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.2rem">Deploy (Optional)</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">Drag the project folder to <strong>netlify.com/drop</strong> or push to GitHub and connect to Vercel — zero configuration needed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- /section-home -->
+
+<!-- ══ FOOTER ═══════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-copy">
+      © 2026 AquaAlert AI &nbsp;·&nbsp; Built for AI + Sustainability Internship &nbsp;·&nbsp; Powered by OpenWeather API
+    </div>
+    <div class="footer-sdgs">
+      Aligned with:
+      <span class="footer-sdg-pill">SDG 6</span>
+      <span class="footer-sdg-pill">SDG 11</span>
+      <span class="footer-sdg-pill">SDG 13</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ══ CHATBOT ═══════════════════════════════════════════════ -->
+<div id="chat-window" class="chat-window">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="chat-avatar">💧</div>
+      <div>
+        <div class="chat-name">AquaAlert AI Assistant</div>
+        <div class="chat-status"><span class="chat-online-dot"></span>Online</div>
+      </div>
+    </div>
+    <button class="chat-close-btn" id="chat-close">✕</button>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-quick-btns">
+    <button class="chat-quick-btn" onclick="document.getElementById('chat-input').value='Will it flood today?';document.getElementById('chat-send').click()">Will it flood?</button>
+    <button class="chat-quick-btn" onclick="document.getElementById('chat-input').value='How can I save water?';document.getElementById('chat-send').click()">Save water</button>
+    <button class="chat-quick-btn" onclick="document.getElementById('chat-input').value='Is it safe to travel?';document.getElementById('chat-send').click()">Safe to travel?</button>
+  </div>
+  <div class="chat-input-area">
+    <input id="chat-input" class="chat-input" type="text" placeholder="Ask about flood risk, water conservation…" />
+    <button id="chat-send" class="chat-send-btn">↑</button>
+  </div>
+</div>
+
+<button class="chat-toggle-btn" id="chat-toggle" aria-label="Open AI Assistant">
+  <span class="chat-toggle-icon">💬</span>
+  <span class="chat-toggle-label">AI Assistant</span>
+  <span class="chat-toggle-ping"></span>
+</button>
+
+<script src="scripts/app.js"></script>
+<script>
+  document.getElementById('open-config-inline')?.addEventListener('click', showConfigModal);
+</script>
+</body>
+</html>
