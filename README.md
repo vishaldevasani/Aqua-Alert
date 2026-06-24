@@ -179,4 +179,4 @@ The application features:
 
 ---
 
-*Built for AI + Sustainability Internship · Powered by OpenWeather & Claude AI*
+*Built for AI + Sustainability Internship · Powered by OpenWeather*
